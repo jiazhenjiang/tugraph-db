@@ -18,10 +18,6 @@
 #include "cypher/cypher_exception.h"
 #include "geax-front-end/ast/Ast.h"
 #include "cypher/parser/generated/LcypherParser.h"
-#include "geax-front-end/ast/expr/BAggFunc.h"
-#include "geax-front-end/ast/expr/VString.h"
-#include "geax-front-end/ast/stmt/FilterStatement.h"
-#include "tools/lgraph_log.h"
 
 namespace parser {
 
@@ -349,11 +345,28 @@ std::any CypherBaseVisitorV2::visitOC_Unwind(LcypherParser::OC_UnwindContext *ct
 }
 
 std::any CypherBaseVisitorV2::visitOC_Merge(LcypherParser::OC_MergeContext *ctx) {
-    NOT_SUPPORT_AND_THROW();
+    geax::frontend::LinearDataModifyingStatement *node = nullptr;
+    checkedCast(node_, node);
+    auto merge = ALLOC_GEAOBJECT(geax::frontend::MergeStatement);
+    node->appendModifyStatement(merge);
+    auto path_pattern = ALLOC_GEAOBJECT(geax::frontend::PathPattern);
+    merge->setPathPattern(path_pattern);
+    VisitGuard guard(VisitType::kMergeClause, visit_types_);
+    SWITCH_CONTEXT_VISIT(ctx->oC_PatternPart(), path_pattern);
+    for (auto action : ctx->oC_MergeAction()) {
+        SWITCH_CONTEXT_VISIT(action, merge);
+    }
     return 0;
 }
 
 std::any CypherBaseVisitorV2::visitOC_MergeAction(LcypherParser::OC_MergeActionContext *ctx) {
+    if (ctx->MATCH()) {
+        VisitGuard guard(VisitType::kMergeOnMatch, visit_types_);
+        return visit(ctx->oC_Set());
+    } else if (ctx->CREATE()) {
+        VisitGuard guard(VisitType::kMergeOnCreate, visit_types_);
+        return visit(ctx->oC_Set());
+    }
     NOT_SUPPORT_AND_THROW();
     return 0;
 }
@@ -373,8 +386,22 @@ std::any CypherBaseVisitorV2::visitOC_Create(LcypherParser::OC_CreateContext *ct
 }
 
 std::any CypherBaseVisitorV2::visitOC_Set(LcypherParser::OC_SetContext *ctx) {
-    if (VisitGuard::InClause(VisitType::kReadingClause, visit_types_)) {
-        NOT_SUPPORT_AND_THROW();
+    if (VisitGuard::InClause(VisitType::kMergeClause, visit_types_)) {
+        geax::frontend::MergeStatement *node = nullptr;
+        checkedCast(node_, node);
+        if (VisitGuard::InClause(VisitType::kMergeOnMatch, visit_types_)) {
+            for (auto &item : ctx->oC_SetItem()) {
+                auto stmt = ALLOC_GEAOBJECT(geax::frontend::SetStatement);
+                node->appendOnMatch(stmt);
+                SWITCH_CONTEXT_VISIT(item, stmt);
+            }
+        } else if (VisitGuard::InClause(VisitType::kMergeOnCreate, visit_types_)) {
+            for (auto &item : ctx->oC_SetItem()) {
+                auto stmt = ALLOC_GEAOBJECT(geax::frontend::SetStatement);
+                node->appendOnCreate(stmt);
+                SWITCH_CONTEXT_VISIT(item, stmt);
+            }
+        }
     } else if (VisitGuard::InClause(VisitType::kUpdatingClause, visit_types_)) {
         geax::frontend::LinearDataModifyingStatement *node = nullptr;
         checkedCast(node_, node);
@@ -383,6 +410,8 @@ std::any CypherBaseVisitorV2::visitOC_Set(LcypherParser::OC_SetContext *ctx) {
             node->appendModifyStatement(stmt);
             SWITCH_CONTEXT_VISIT(item, stmt);
         }
+    } else {
+        NOT_SUPPORT_AND_THROW();
     }
     return 0;
 }
@@ -459,12 +488,13 @@ std::any CypherBaseVisitorV2::visitOC_InQueryCall(LcypherParser::OC_InQueryCallC
     node->appendQueryStatement(query_call);
     auto procedure = ALLOC_GEAOBJECT(geax::frontend::CallProcedureStatement);
     query_call->setProcedureStatement(procedure);
-    auto named_procedure = ALLOC_GEAOBJECT(geax::frontend::NamedProcedureCall);
-    procedure->setProcedureCall(named_procedure);
-    SWITCH_CONTEXT_VISIT(ctx->oC_ExplicitProcedureInvocation(), named_procedure);
+    auto inquery_query = ALLOC_GEAOBJECT(geax::frontend::InQueryProcedureCall);
+    procedure->setProcedureCall(inquery_query);
+    VisitGuard guard(VisitType::kInQueryCall, visit_types_);
+    SWITCH_CONTEXT_VISIT(ctx->oC_ExplicitProcedureInvocation(), inquery_query);
     if (ctx->oC_YieldItems()) {
         auto yield_fields = ALLOC_GEAOBJECT(geax::frontend::YieldField);
-        named_procedure->setYield(yield_fields);
+        inquery_query->setYield(yield_fields);
         SWITCH_CONTEXT_VISIT(ctx->oC_YieldItems(), yield_fields);
     }
     return 0;
@@ -644,8 +674,8 @@ std::any CypherBaseVisitorV2::visitOC_Hint(LcypherParser::OC_HintContext *ctx) {
 
 std::any CypherBaseVisitorV2::visitOC_Where(LcypherParser::OC_WhereContext *ctx) {
     if (VisitGuard::InClause(VisitType::kWithClause, visit_types_)) {
-        if (VisitGuard::InClause(VisitType::kReadingClause, visit_types_)
-            || VisitGuard::InClause(VisitType::kUpdatingClause, visit_types_)) {
+        if (VisitGuard::InClause(VisitType::kReadingClause, visit_types_) ||
+            VisitGuard::InClause(VisitType::kUpdatingClause, visit_types_)) {
             filter_in_with_clause_ = ALLOC_GEAOBJECT(geax::frontend::FilterStatement);
             geax::frontend::Expr *where = nullptr;
             checkedAnyCast(visit(ctx->oC_Expression()), where);
@@ -689,7 +719,8 @@ std::any CypherBaseVisitorV2::visitOC_Pattern(LcypherParser::OC_PatternContext *
 }
 
 std::any CypherBaseVisitorV2::visitOC_PatternPart(LcypherParser::OC_PatternPartContext *ctx) {
-    if (VisitGuard::InClause(VisitType::kReadingPattern, visit_types_)) {
+    if (VisitGuard::InClause(VisitType::kReadingPattern, visit_types_) ||
+        VisitGuard::InClause(VisitType::kMergeClause, visit_types_)) {
         geax::frontend::PathPattern *node = nullptr;
         checkedCast(node_, node);
         if (ctx->oC_Variable() != nullptr) {
@@ -725,6 +756,8 @@ std::any CypherBaseVisitorV2::visitOC_PatternPart(LcypherParser::OC_PatternPartC
         auto pc = ALLOC_GEAOBJECT(geax::frontend::PathChain);
         node->appendChain(pc);
         SWITCH_CONTEXT_VISIT(ctx->oC_AnonymousPatternPart(), pc);
+    } else {
+        NOT_SUPPORT_AND_THROW();
     }
     return 0;
 }
@@ -1582,16 +1615,32 @@ std::any CypherBaseVisitorV2::visitOC_FunctionName(LcypherParser::OC_FunctionNam
 
 std::any CypherBaseVisitorV2::visitOC_ExplicitProcedureInvocation(
     LcypherParser::OC_ExplicitProcedureInvocationContext *ctx) {
-    geax::frontend::NamedProcedureCall *node = nullptr;
-    checkedCast(node_, node);
-    std::string fun_name;
-    checkedAnyCast(visit(ctx->oC_ProcedureName()), fun_name);
-    geax::frontend::StringParam name = fun_name;
-    node->setName(std::move(name));
-    for (auto oc : ctx->oC_Expression()) {
-        geax::frontend::Expr *expr = nullptr;
-        checkedAnyCast(visit(oc), expr);
-        node->appendArg(expr);
+    if (VisitGuard::InClause(VisitType::kStandaloneCall, visit_types_)) {
+        geax::frontend::NamedProcedureCall *node = nullptr;
+        checkedCast(node_, node);
+        std::string fun_name;
+        checkedAnyCast(visit(ctx->oC_ProcedureName()), fun_name);
+        geax::frontend::StringParam name = fun_name;
+        node->setName(std::move(name));
+        for (auto oc : ctx->oC_Expression()) {
+            geax::frontend::Expr *expr = nullptr;
+            checkedAnyCast(visit(oc), expr);
+            node->appendArg(expr);
+        }
+    } else if (VisitGuard::InClause(VisitType::kInQueryCall, visit_types_)) {
+        geax::frontend::InQueryProcedureCall *node = nullptr;
+        checkedCast(node_, node);
+        std::string fun_name;
+        checkedAnyCast(visit(ctx->oC_ProcedureName()), fun_name);
+        geax::frontend::StringParam name = fun_name;
+        node->setName(std::move(name));
+        for (auto oc : ctx->oC_Expression()) {
+            geax::frontend::Expr *expr = nullptr;
+            checkedAnyCast(visit(oc), expr);
+            node->appendArg(expr);
+        }
+    } else {
+        NOT_SUPPORT_AND_THROW();
     }
     return 0;
 }
@@ -1743,7 +1792,8 @@ std::any CypherBaseVisitorV2::visitOC_MapLiteral(LcypherParser::OC_MapLiteralCon
             std::string name = vstr->val();
             ps->appendProperty(std::move(name), expr);
         }
-    } else if (VisitGuard::InClause(VisitType::kStandaloneCall, visit_types_)) {
+    } else if (VisitGuard::InClause(VisitType::kStandaloneCall, visit_types_) ||
+               VisitGuard::InClause(VisitType::kInQueryCall, visit_types_)) {
         auto map = ALLOC_GEAOBJECT(geax::frontend::MkMap);
         if (ctx->oC_Expression().size() != ctx->oC_PropertyKeyName().size())
             NOT_SUPPORT_AND_THROW();

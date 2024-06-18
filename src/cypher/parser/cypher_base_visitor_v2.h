@@ -36,6 +36,9 @@ namespace parser {
 enum class VisitType {
     kReadingClause,
     kUpdatingClause,
+    kMergeClause,
+    kMergeOnMatch,
+    kMergeOnCreate,
     kReadingPattern,
     kUpdatingPattern,
     kMatchPattern,
@@ -44,6 +47,7 @@ enum class VisitType {
     kDeleteVariable,
     kWithClause,
     kStandaloneCall,
+    kInQueryCall,
     kSinglePartQuery,
     kUnionClause
 };
