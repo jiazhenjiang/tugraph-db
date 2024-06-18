@@ -373,12 +373,12 @@ TEST_F(TestCypherV2, TestHint) {
 //     test_files(dir);
 // }
 
-// TEST_F(TestCypherV2, TestUnion) {
-//     set_graph_type(GraphFactory::GRAPH_DATASET_TYPE::YAGO);
-//     set_query_type(lgraph::ut::QUERY_TYPE::CYPHER);
-//     std::string dir = test_suite_dir_ + "/union/cypher";
-//     test_files(dir);
-// }
+TEST_F(TestCypherV2, TestUnion) {
+    set_graph_type(GraphFactory::GRAPH_DATASET_TYPE::YAGO);
+    set_query_type(lgraph::ut::QUERY_TYPE::CYPHER);
+    std::string dir = test_suite_dir_ + "/union/cypher";
+    test_files(dir);
+}
 
 // TEST_F(TestCypherV2, TestFunction) {
 //     set_graph_type(GraphFactory::GRAPH_DATASET_TYPE::YAGO);

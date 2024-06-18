@@ -164,15 +164,20 @@ std::any CypherBaseVisitorV2::visitOC_Query(LcypherParser::OC_QueryContext *ctx)
 }
 
 std::any CypherBaseVisitorV2::visitOC_RegularQuery(LcypherParser::OC_RegularQueryContext *ctx) {
-    visit(ctx->oC_SingleQuery());
-    for (auto token : ctx->oC_Union()) {
-        visit(token);
+    geax::frontend::ProcedureBody *body = nullptr;
+    checkedCast(node_, body);
+    SWITCH_CONTEXT_VISIT(ctx->oC_SingleQuery(), body);
+    if (!ctx->oC_Union().empty()) {
+        VisitGuard guard(VisitType::kUnionClause, visit_types_);
+        for (auto token : ctx->oC_Union()) {
+            SWITCH_CONTEXT_VISIT(token, body);
+        }
     }
     return 0;
 }
 
 std::any CypherBaseVisitorV2::visitOC_Union(LcypherParser::OC_UnionContext *ctx) {
-    NOT_SUPPORT_AND_THROW();
+    return visitChildren(ctx);
 }
 
 std::any CypherBaseVisitorV2::visitOC_SingleQuery(LcypherParser::OC_SingleQueryContext *ctx) {
@@ -188,18 +193,25 @@ std::any CypherBaseVisitorV2::visitOC_SinglePartQuery(
     if (ctx->oC_ReadingClause().size() > 2) NOT_SUPPORT_AND_THROW();
     geax::frontend::ProcedureBody *body = nullptr;
     checkedCast(node_, body);
-    auto node = ALLOC_GEAOBJECT(geax::frontend::StatementWithYield);
-    body->appendStatement(node);
+    geax::frontend::StatementWithYield* node;
     if (ctx->oC_UpdatingClause().empty()) {
         VisitGuard guard(VisitType::kReadingClause, visit_types_);
-        auto stmt = ALLOC_GEAOBJECT(geax::frontend::QueryStatement);
-        node->setStatement(stmt);
-        auto join = ALLOC_GEAOBJECT(geax::frontend::JoinQueryExpression);
-        stmt->setJoinQuery(join);
-        auto co = ALLOC_GEAOBJECT(geax::frontend::CompositeQueryStatement);
-        join->setHead(co);
         auto l = ALLOC_GEAOBJECT(geax::frontend::AmbientLinearQueryStatement);
-        co->setHead(l);
+        if (!VisitGuard::InClause(VisitType::kUnionClause, visit_types_)) {
+            node = ALLOC_GEAOBJECT(geax::frontend::StatementWithYield);
+            body->appendStatement(node);
+            auto stmt = ALLOC_GEAOBJECT(geax::frontend::QueryStatement);
+            node->setStatement(stmt);
+            auto join = ALLOC_GEAOBJECT(geax::frontend::JoinQueryExpression);
+            stmt->setJoinQuery(join);
+            auto co = ALLOC_GEAOBJECT(geax::frontend::CompositeQueryStatement);
+            join->setHead(co);
+            co->setHead(l);
+        } else {
+            node = body->statements().back();
+            auto stmt = (geax::frontend::QueryStatement*)node->statement();
+            stmt->joinQuery()->head()->appendBody(ALLOC_GEAOBJECT(geax::frontend::Union), l);
+        }
         SWITCH_CONTEXT_VISIT_CHILDREN(ctx, l);
         if (VisitGuard::InClause(VisitType::kSinglePartQuery, visit_types_) &&
             filter_in_with_clause_) {
@@ -207,6 +219,8 @@ std::any CypherBaseVisitorV2::visitOC_SinglePartQuery(
         }
     } else {
         VisitGuard guard(VisitType::kUpdatingClause, visit_types_);
+        node = ALLOC_GEAOBJECT(geax::frontend::StatementWithYield);
+        body->appendStatement(node);
         auto stmt = ALLOC_GEAOBJECT(geax::frontend::LinearDataModifyingStatement);
         node->setStatement(stmt);
         SWITCH_CONTEXT_VISIT_CHILDREN(ctx, stmt);

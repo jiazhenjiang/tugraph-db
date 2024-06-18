@@ -130,9 +130,11 @@ geax::frontend::GEAXErrorCode ExecutionPlanMaker::Build(geax::frontend::AstNode*
         return ret;
     }
     _DumpPlanBeforeConnect(0, false);
+    LOG_INFO() << "Dump plan finished!" << __FILE__ << __LINE__;
     root = pattern_graph_root_[0];
     for (size_t i = 1; i < pattern_graph_root_.size(); i++) {
-        root = _Connect(root, pattern_graph_root_[i], &(pattern_graphs_[i]));
+        if (should_connect_[i])
+            root = _Connect(root, pattern_graph_root_[i], &(pattern_graphs_[i]));
     }
     if (op_filter_ != nullptr) {
         NOT_SUPPORT();
@@ -142,7 +144,10 @@ geax::frontend::GEAXErrorCode ExecutionPlanMaker::Build(geax::frontend::AstNode*
 
 std::string ExecutionPlanMaker::_DumpPlanBeforeConnect(int indent, bool statistics) const {
     std::string s = "Execution Plan Before Connect: \n";
-    for (auto seg : pattern_graph_root_) OpBase::DumpStream(seg, 0, false, s);
+    for (size_t i = 1; i < pattern_graph_root_.size(); i++) {
+        if (should_connect_[i])
+            OpBase::DumpStream(pattern_graph_root_[i], 0, false, s);
+    }
     LOG_DEBUG() << s;
     return s;
 }
@@ -746,10 +751,12 @@ std::any ExecutionPlanMaker::visit(geax::frontend::SessionSet* node) { NOT_SUPPO
 std::any ExecutionPlanMaker::visit(geax::frontend::SessionReset* node) { NOT_SUPPORT(); }
 
 std::any ExecutionPlanMaker::visit(geax::frontend::ProcedureBody* node) {
-    pattern_graph_size_ = node->statements().size();
+    pattern_graph_size_ = pattern_graphs_.size();
     pattern_graph_root_.resize(pattern_graph_size_, nullptr);
+    should_connect_.resize(pattern_graph_size_, true);
+    cur_pattern_graph_ = -1;
     for (size_t i = 0; i < node->statements().size(); i++) {
-        cur_pattern_graph_ = i;
+        cur_pattern_graph_ += 1;
         // Build Argument
         auto& sym_tab = pattern_graphs_[cur_pattern_graph_].symbol_table;
         for (auto& symbol : sym_tab.symbols) {
@@ -806,6 +813,19 @@ std::any ExecutionPlanMaker::visit(geax::frontend::JoinRightPart* node) { NOT_SU
 std::any ExecutionPlanMaker::visit(geax::frontend::CompositeQueryStatement* node) {
     auto head = node->head();
     ACCEPT_AND_CHECK_WITH_ERROR_MSG(head);
+    if (!node->body().empty()) {
+        auto op_union = new Union();
+        op_union->AddChild(pattern_graph_root_[cur_pattern_graph_]);
+        auto op_produce = new ProduceResults();
+        op_produce->AddChild(op_union);
+        pattern_graph_root_[cur_pattern_graph_] = op_produce;
+        for (auto statement : node->body()) {
+            cur_pattern_graph_ += 1;
+            should_connect_[cur_pattern_graph_] = false;
+            ACCEPT_AND_CHECK_WITH_ERROR_MSG(std::get<1>(statement));
+            op_union->AddChild(pattern_graph_root_[cur_pattern_graph_]->children[0]);
+        }
+    }
     return geax::frontend::GEAXErrorCode::GEAX_SUCCEED;
 }
 

@@ -40,6 +40,7 @@ class ExecutionPlanMaker : public geax::frontend::AstNodeVisitor {
     std::string error_msg_;
 
     std::vector<OpBase*> pattern_graph_root_;
+    std::vector<bool> should_connect_;
     std::vector<PatternGraph>& pattern_graphs_;
     size_t cur_pattern_graph_;
     size_t pattern_graph_size_;

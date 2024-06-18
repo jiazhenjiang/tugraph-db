@@ -210,6 +210,7 @@ class PatternGraphMaker : public geax::frontend::AstNodeVisitor {
 
     ExecutionPlanV2* execution_plan_;
     std::vector<PatternGraph>& pattern_graphs_;
+    std::vector<bool> pattern_graph_in_union_;
     std::vector<size_t> symbols_idx_;
     size_t cur_pattern_graph_;
     std::unordered_set<geax::frontend::AstNodeType> cur_types_;

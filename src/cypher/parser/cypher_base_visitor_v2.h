@@ -44,7 +44,8 @@ enum class VisitType {
     kDeleteVariable,
     kWithClause,
     kStandaloneCall,
-    kSinglePartQuery
+    kSinglePartQuery,
+    kUnionClause
 };
 
 class VisitGuard {
