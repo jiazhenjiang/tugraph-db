@@ -822,6 +822,8 @@ std::any PatternGraphMaker::visit(geax::frontend::ProcedureBody* node) {
             } else {
                 pattern_graph_in_union_.push_back(false);
             }
+        } else {
+            pattern_graph_in_union_.push_back(false);
         }
     }
     pattern_graphs_.resize(pattern_graphs_size);
