@@ -472,12 +472,42 @@ std::any CypherBaseVisitorV2::visitOC_Delete(LcypherParser::OC_DeleteContext *ct
 }
 
 std::any CypherBaseVisitorV2::visitOC_Remove(LcypherParser::OC_RemoveContext *ctx) {
-    NOT_SUPPORT_AND_THROW();
+    if (VisitGuard::InClause(VisitType::kUpdatingClause, visit_types_)) {
+        geax::frontend::LinearDataModifyingStatement *node = nullptr;
+        checkedCast(node_, node);
+        for (auto &item : ctx->oC_RemoveItem()) {
+            auto stmt = ALLOC_GEAOBJECT(geax::frontend::RemoveStatement);
+            node->appendModifyStatement(stmt);
+            SWITCH_CONTEXT_VISIT(item, stmt);
+        }
+    } else {
+        NOT_SUPPORT_AND_THROW();
+    }
     return 0;
 }
 
 std::any CypherBaseVisitorV2::visitOC_RemoveItem(LcypherParser::OC_RemoveItemContext *ctx) {
-    NOT_SUPPORT_AND_THROW();
+    geax::frontend::RemoveStatement *node = nullptr;
+    checkedCast(node_, node);
+    if (ctx->oC_PropertyExpression()) {
+        geax::frontend::Expr *name_expr = nullptr, *property_expr = nullptr;
+        auto pe_ctx = ctx->oC_PropertyExpression();
+        checkedAnyCast(visit(ctx->oC_PropertyExpression()->oC_Atom()), name_expr);
+        if (pe_ctx->oC_PropertyLookup().empty())
+            CYPHER_TODO();
+        checkedAnyCast(visit(pe_ctx->oC_PropertyLookup(0)), property_expr);
+        geax::frontend::Ref *vstr = nullptr;
+        geax::frontend::VString *pstr = nullptr;
+        checkedCast(name_expr, vstr);
+        checkedCast(property_expr, pstr);
+        std::string variable = vstr->name(), property = pstr->val();
+        auto remove = ALLOC_GEAOBJECT(geax::frontend::RemoveSingleProperty);
+        node->appendItem(remove);
+        remove->setV(std::move(variable));
+        remove->setProperty(std::move(property));
+    } else {
+        CYPHER_TODO();
+    }
     return 0;
 }
 
