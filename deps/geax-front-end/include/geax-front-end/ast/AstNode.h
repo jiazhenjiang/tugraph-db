@@ -92,6 +92,7 @@ using StrArray = std::array<const char* const, N>;
     TYPE(ReplaceStatement, kReplaceStatement, "ReplaceStatement")                         \
     TYPE(SetStatement, kSetStatement, "SetStatement")                                     \
     TYPE(RemoveStatement, kRemoveStatement, "RemoveStatement")                            \
+    TYPE(RemoveSingleProperty, kRemoveSingleProperty, "RemoveSingleProperty")             \
     TYPE(MergeStatement, kMergeStatement, "MergeStatement")                               \
     TYPE(OtherWise, kOtherWise, "OtherWise")                                              \
     TYPE(Union, kUnion, "Union")                                                          \

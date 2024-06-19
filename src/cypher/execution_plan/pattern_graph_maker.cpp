@@ -1047,7 +1047,9 @@ std::any PatternGraphMaker::visit(geax::frontend::DeleteStatement* node) {
     return geax::frontend::GEAXErrorCode::GEAX_SUCCEED;
 }
 
-std::any PatternGraphMaker::visit(geax::frontend::RemoveStatement* node) { NOT_SUPPORT(); }
+std::any PatternGraphMaker::visit(geax::frontend::RemoveStatement* node) {
+    return geax::frontend::GEAXErrorCode::GEAX_SUCCEED;
+}
 
 std::any PatternGraphMaker::visit(geax::frontend::MergeStatement* node) {
     ClauseGuard cg(node->type(), cur_types_);
@@ -1128,5 +1130,7 @@ void PatternGraphMaker::AddRelationship(Relationship* rel) {
     }
     pattern_graph.AddRelationship(rel);
 }
+
+std::any PatternGraphMaker::visit(geax::frontend::RemoveSingleProperty* node) { NOT_SUPPORT(); }
 
 }  // namespace cypher

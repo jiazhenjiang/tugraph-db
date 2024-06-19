@@ -1094,7 +1094,12 @@ std::any ExecutionPlanMaker::visit(geax::frontend::DeleteStatement* node) {
     return geax::frontend::GEAXErrorCode::GEAX_SUCCEED;
 }
 
-std::any ExecutionPlanMaker::visit(geax::frontend::RemoveStatement* node) { NOT_SUPPORT(); }
+std::any ExecutionPlanMaker::visit(geax::frontend::RemoveStatement* node) {
+    auto& pattern_graph = pattern_graphs_[cur_pattern_graph_];
+    auto op = new OpGqlRemove(node->items(), &pattern_graph);
+    _UpdateStreamRoot(op, pattern_graph_root_[cur_pattern_graph_]);
+    return geax::frontend::GEAXErrorCode::GEAX_SUCCEED;
+}
 
 std::any ExecutionPlanMaker::visit(geax::frontend::MergeStatement* node) { NOT_SUPPORT(); }
 
@@ -1138,5 +1143,9 @@ std::any ExecutionPlanMaker::visit(geax::frontend::InQueryProcedureCall* node) {
 std::any ExecutionPlanMaker::visit(geax::frontend::DummyNode* node) { NOT_SUPPORT(); }
 
 std::any ExecutionPlanMaker::reportError() { return error_msg_; }
+
+std::any ExecutionPlanMaker::visit(geax::frontend::RemoveSingleProperty* node) {
+    return std::any();
+}
 
 }  // namespace cypher

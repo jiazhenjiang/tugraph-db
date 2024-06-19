@@ -484,6 +484,15 @@ public:
         VISIT_PARAM_AND_CHECK_WITH_MSG(value);
         return GEAXErrorCode::GEAX_SUCCEED;
     }
+    std::any visit(RemoveSingleProperty* node) override {
+        INDET_GUARD();
+        VARIABLE_GUARD_WITH_TYPE_NAME(RemoveSingleProperty);
+        auto& v = node->v();
+        auto& property = node->property();
+        VISIT_PARAM_AND_CHECK_WITH_MSG(v);
+        VISIT_PARAM_AND_CHECK_WITH_MSG(property);
+        return GEAXErrorCode::GEAX_SUCCEED;
+    }
     std::any visit(SetLabel* node) override {
         INDET_GUARD();
         VARIABLE_GUARD_WITH_TYPE_NAME(GetField);
