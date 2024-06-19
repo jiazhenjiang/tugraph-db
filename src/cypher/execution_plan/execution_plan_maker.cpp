@@ -16,7 +16,6 @@
 #include "cypher/execution_plan/clause_guard.h"
 #include "cypher/execution_plan/ops/ops.h"
 #include "cypher/execution_plan/execution_plan_maker.h"
-#include "tools/lgraph_log.h"
 
 namespace cypher {
 
@@ -518,6 +517,22 @@ std::any ExecutionPlanMaker::visit(geax::frontend::PropStruct* node) {
         if (is_end_path_) {
             auto right = objAlloc_.allocate<geax::frontend::VInt>();
             right->setVal(((geax::frontend::VInt*)value)->val());
+            expr->setRight(right);
+        }
+    } else if (value->type() == geax::frontend::AstNodeType::kVBool) {
+        p.type = Property::VALUE;
+        p.value = lgraph::FieldData(((geax::frontend::VBool*)value)->val());
+        if (is_end_path_) {
+            auto right = objAlloc_.allocate<geax::frontend::VBool>();
+            right->setVal(((geax::frontend::VBool*)value)->val());
+            expr->setRight(right);
+        }
+    } else if (value->type() == geax::frontend::AstNodeType::kVDouble) {
+        p.type = Property::VALUE;
+        p.value = lgraph::FieldData(((geax::frontend::VDouble*)value)->val());
+        if (is_end_path_) {
+            auto right = objAlloc_.allocate<geax::frontend::VDouble>();
+            right->setVal(((geax::frontend::VDouble*)value)->val());
             expr->setRight(right);
         }
     } else if (value->type() == geax::frontend::AstNodeType::kRef) {
@@ -1101,7 +1116,12 @@ std::any ExecutionPlanMaker::visit(geax::frontend::RemoveStatement* node) {
     return geax::frontend::GEAXErrorCode::GEAX_SUCCEED;
 }
 
-std::any ExecutionPlanMaker::visit(geax::frontend::MergeStatement* node) { NOT_SUPPORT(); }
+std::any ExecutionPlanMaker::visit(geax::frontend::MergeStatement* node) {
+    auto& pattern_graph = pattern_graphs_[cur_pattern_graph_];
+    auto op = new OpGqlMerge(node->onMatch(), node->onCreate(), node->pathPattern(), &pattern_graph);
+    _UpdateStreamRoot(op, pattern_graph_root_[cur_pattern_graph_]);
+    return geax::frontend::GEAXErrorCode::GEAX_SUCCEED;
+}
 
 std::any ExecutionPlanMaker::visit(geax::frontend::OtherWise* node) { NOT_SUPPORT(); }
 
