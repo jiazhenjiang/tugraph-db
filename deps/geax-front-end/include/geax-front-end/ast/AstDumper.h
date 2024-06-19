@@ -1349,9 +1349,13 @@ public:
         VISIT_PARAM_AND_CHECK_WITH_MSG(items);
         return GEAXErrorCode::GEAX_SUCCEED;
     }
-    std::any visit(RemoveStatement*) override {
+    std::any visit(RemoveStatement* node) override {
         INDET_GUARD();
         VARIABLE_GUARD_WITH_TYPE_NAME(RemoveStatement);
+        auto& items = node->items();
+        for (auto &item : items) {
+            VISIT_PARAM_AND_CHECK_WITH_MSG(item);
+        }
         return GEAXErrorCode::GEAX_SUCCEED;
     }
     std::any visit(MergeStatement* node) override {
