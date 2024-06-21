@@ -1167,5 +1167,6 @@ std::any ExecutionPlanMaker::reportError() { return error_msg_; }
 std::any ExecutionPlanMaker::visit(geax::frontend::RemoveSingleProperty* node) {
     return std::any();
 }
+std::any ExecutionPlanMaker::visit(geax::frontend::ListComprehension* node) { return std::any(); }
 
 }  // namespace cypher

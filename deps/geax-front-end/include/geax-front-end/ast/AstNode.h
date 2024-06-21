@@ -189,6 +189,7 @@ using StrArray = std::array<const char* const, N>;
     TYPE(MkRecord, kMkRecord, "MkRecord")                                                 \
     TYPE(MkSet, kMkSet, "MkSet")                                                          \
     TYPE(MkTuple, kMkTuple, "MkTuple")                                                    \
+    TYPE(ListComprehension, kListComprehension, "ListComprehension")                      \
     TYPE(UnwindStatement, kUnwindStatement, "UnwindStatement")                            \
     TYPE(InQueryProcedureCall, kInQueryProcedureCall, "InQueryProcedureCall")             \
     TYPE(DummyNode, kNotDefined, "NotDefined")

@@ -1709,8 +1709,21 @@ std::any CypherBaseVisitorV2::visitOC_Namespace(LcypherParser::OC_NamespaceConte
 
 std::any CypherBaseVisitorV2::visitOC_ListComprehension(
     LcypherParser::OC_ListComprehensionContext *ctx) {
-    NOT_SUPPORT_AND_THROW();
-    return 0;
+    auto listComprehension = ALLOC_GEAOBJECT(geax::frontend::ListComprehension);
+    auto var = ctx->oC_FilterExpression()->oC_IdInColl()->oC_Variable()->getText();
+    auto variable_expr = ALLOC_GEAOBJECT(geax::frontend::Ref);
+    variable_expr->setName(std::move(var));
+    listComprehension->appendElem(variable_expr);
+    geax::frontend::Expr *in_expr, *op_expr;
+    checkedAnyCast(visit(ctx->oC_FilterExpression()->oC_IdInColl()->oC_Expression()), in_expr);
+    if (ctx->oC_Expression()) {
+        checkedAnyCast(visit(ctx->oC_Expression()), op_expr);
+    } else {
+        CYPHER_TODO();
+    }
+    listComprehension->appendElem(in_expr);
+    listComprehension->appendElem(op_expr);
+    return (geax::frontend::Expr*)listComprehension;
 }
 
 std::any CypherBaseVisitorV2::visitOC_PatternComprehension(

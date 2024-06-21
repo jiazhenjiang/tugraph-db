@@ -1504,6 +1504,10 @@ public:
         return GEAXErrorCode::GEAX_SUCCEED;
     }
     std::any visit(DummyNode* node) override { return reportError(node); }
+    std::any visit(ListComprehension* node) override {
+        VISIT_PARAM_AND_CHECK_WITH_MSG(node->elems());
+        return GEAXErrorCode::GEAX_SUCCEED;
+    }
 
 protected:
     std::any reportError() override { return GEAXErrorCode::GEAX_COMMON_NOT_SUPPORT; }

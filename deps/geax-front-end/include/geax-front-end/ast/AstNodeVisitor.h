@@ -182,6 +182,7 @@ class KillStatement;
 class ManagerStatement;
 class UnwindStatement;
 class InQueryProcedureCall;
+class ListComprehension;
 
 class DummyNode;
 
@@ -286,6 +287,8 @@ class AstNodeVisitor {
     virtual std::any visit(MkRecord* node) = 0;
     virtual std::any visit(MkSet* node) = 0;
     virtual std::any visit(MkTuple* node) = 0;
+
+    virtual std::any visit(ListComprehension* node) = 0;
 
     virtual std::any visit(VBool* node) = 0;
     virtual std::any visit(VInt* node) = 0;
@@ -551,6 +554,7 @@ class AstExprNodeVisitorImpl : public AstNodeVisitor {
     virtual std::any visit(VNone* node) override = 0;
     virtual std::any visit(Ref* node) override = 0;
     virtual std::any visit(Param* node) override = 0;
+    virtual std::any visit(ListComprehension* node) override = 0;
 
     // predicates
     virtual std::any visit(IsNull*) override {
@@ -1060,6 +1064,9 @@ class AstLabelTreeNodeVisitorImpl : public AstNodeVisitor {
         return GEAXErrorCode::GEAX_COMMON_NOT_SUPPORT;
     }
     virtual std::any visit(Exists*) override {
+        return GEAXErrorCode::GEAX_COMMON_NOT_SUPPORT;
+    }
+    virtual std::any visit(ListComprehension*) override {
         return GEAXErrorCode::GEAX_COMMON_NOT_SUPPORT;
     }
 

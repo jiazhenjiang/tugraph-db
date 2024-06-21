@@ -1145,5 +1145,14 @@ void PatternGraphMaker::AddRelationship(Relationship* rel) {
 }
 
 std::any PatternGraphMaker::visit(geax::frontend::RemoveSingleProperty* node) { NOT_SUPPORT(); }
+std::any PatternGraphMaker::visit(geax::frontend::ListComprehension* node) {
+    geax::frontend::Ref *ref = nullptr;
+    checkedCast(node->elems()[0], ref);
+    AddSymbol(ref->name(), cypher::SymbolNode::CONSTANT, cypher::SymbolNode::LOCAL);
+    for (auto item : node->elems()) {
+        ACCEPT_AND_CHECK_WITH_ERROR_MSG(item);
+    }
+    return geax::frontend::GEAXErrorCode::GEAX_SUCCEED;
+}
 
 }  // namespace cypher

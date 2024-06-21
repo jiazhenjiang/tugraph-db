@@ -134,6 +134,7 @@ class PatternGraphMaker : public geax::frontend::AstNodeVisitor {
     std::any visit(geax::frontend::VNone* node) override;
     std::any visit(geax::frontend::Ref* node) override;
     std::any visit(geax::frontend::Param* node) override;
+    std::any visit(geax::frontend::ListComprehension* node) override;
 
     // predicates
     std::any visit(geax::frontend::IsNull* node) override;
