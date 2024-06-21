@@ -14,7 +14,6 @@
 #include "cypher/parser/cypher_base_visitor_v2.h"
 #include <tuple>
 #include "cypher/utils/geax_util.h"
-#include "cypher/parser/data_typedef.h"
 #include "cypher/cypher_exception.h"
 #include "geax-front-end/ast/Ast.h"
 #include "cypher/parser/generated/LcypherParser.h"
@@ -137,15 +136,12 @@ std::any CypherBaseVisitorV2::visitOC_Statement(LcypherParser::OC_StatementConte
     //    static_cast<geax::frontend::ExplainActivity*>(node_);
     geax::frontend::NormalTransaction *node = nullptr;
     checkedCast(node_, node);
-    if (ctx->EXPLAIN()) {
-        //  node->setIsProfile(false);
-    } else if (ctx->PROFILE()) {
-        //  node->setIsProfile(true);
-    } else {
-        auto body = ALLOC_GEAOBJECT(geax::frontend::ProcedureBody);
-        node->setProcedureBody(body);
-        SWITCH_CONTEXT_VISIT_CHILDREN(ctx, body);
-    }
+    _cmd_type = ctx->EXPLAIN()   ? parser::CmdType::EXPLAIN
+                : ctx->PROFILE() ? parser::CmdType::PROFILE
+                                 : parser::CmdType::QUERY;
+    auto body = ALLOC_GEAOBJECT(geax::frontend::ProcedureBody);
+    node->setProcedureBody(body);
+    SWITCH_CONTEXT_VISIT_CHILDREN(ctx, body);
     return 0;
 }
 

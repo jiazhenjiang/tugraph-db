@@ -200,6 +200,23 @@ class TestCypherV2 : public TuGraphTest {
                 result = execution_plan_v2.ErrorMsg();
                 return false;
             } else {
+                if (visitor.CommandType() != parser::CmdType::QUERY) {
+                    ctx_->result_info_ = std::make_unique<cypher::ResultInfo>();
+                    ctx_->result_ = std::make_unique<lgraph::Result>();
+                    std::string header, data;
+                    if (visitor.CommandType() == parser::CmdType::EXPLAIN) {
+                        header = "@plan";
+                        data = execution_plan_v2.DumpPlan(0, false);
+                    } else {
+                        header = "@profile";
+                        data = execution_plan_v2.DumpGraph();
+                    }
+                    ctx_->result_->ResetHeader({{header, lgraph_api::LGraphType::STRING}});
+                    auto r = ctx_->result_->MutableRecord();
+                    r->Insert(header, lgraph::FieldData(data));
+                    result = ctx_->result_->Dump(false);
+                    return true;
+                }
                 try {
                     execution_plan_v2.Execute(ctx_.get());
                 } catch (std::exception& e) {
