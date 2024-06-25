@@ -117,52 +117,24 @@ static OpBase* _Connect(OpBase* lhs, OpBase* rhs, PatternGraph* pattern_graph) {
     return rhs;
 }
 
-static bool CheckReturnElements(geax::frontend::AstNode* astNode) {
-    geax::frontend::NormalTransaction *node = nullptr;
-    checkedCast(astNode, node);
-    try {
-        geax::frontend::QueryStatement *queryStatement = nullptr;
-        checkedCast(node->query()->statements()[0]->statement(), queryStatement);
-        auto compositeQuery = queryStatement->joinQuery()->head();
-        if (!compositeQuery->body().empty()) {
-            compositeQuery->head()
-        }
-    } catch (std::exception& e) {
-        return true;
-    }
-
-    auto &last_part = stmt[i].parts.back();
-    auto last_ret = last_part.return_clause;
-    if (!last_ret) return false;
-    auto &ret_items = std::get<0>(std::get<1>(ret));
-    auto &last_ret_items = std::get<0>(std::get<1>(*last_ret));
+static bool CheckReturnElements(const std::vector<std::string> &last_ret, const std::vector<std::string> &now_ret) {
     // some certain single query (e.g. MATCH(n) RETURN *) without no return items
     // cannot be unioned.
-    if (ret_items.size() == 0 || last_ret_items.size() == 0) {
+    if (last_ret.empty() || now_ret.empty()) {
         return false;
     }
     // if two queries return different size of items, cannot be unioned
-    if (ret_items.size() != last_ret_items.size()) {
+    if (last_ret.size() != now_ret.size()) {
         return false;
     }
-    for (int j = 0; j < (int)ret_items.size(); j++) {
-        auto &e1 = std::get<0>(ret_items[j]);
-        auto &v1 = std::get<1>(ret_items[j]);
-        auto s1 = v1.empty() ? e1.ToString(false) : v1;
-        auto &e2 = std::get<0>(last_ret_items[j]);
-        auto &v2 = std::get<1>(last_ret_items[j]);
-        auto s2 = v2.empty() ? e2.ToString(false) : v2;
-        if (s1 != s2) return false;
+    for (int j = 0; j < (int)last_ret.size(); j++) {
+        if (last_ret[j] != now_ret[j]) return false;
     }
     return true;
 }
 
 geax::frontend::GEAXErrorCode ExecutionPlanMaker::Build(geax::frontend::AstNode* astNode,
                                                         OpBase*& root) {
-    if (!CheckReturnElements(astNode)) {
-        throw lgraph::CypherException(
-            "All sub queries in an UNION must have the same column names.");
-    }
     cur_types_.clear();
     auto ret = std::any_cast<geax::frontend::GEAXErrorCode>(astNode->accept(*this));
     if (ret != geax::frontend::GEAXErrorCode::GEAX_SUCCEED) {
@@ -984,8 +956,19 @@ std::any ExecutionPlanMaker::visit(geax::frontend::PrimitiveResultStatement* nod
     std::vector<std::tuple<ArithExprNode, std::string>> arith_items;
     auto& pattern_graph = pattern_graphs_[cur_pattern_graph_];
     if (!should_connect_[cur_pattern_graph_]) {
-
-        result_info_.header.colums
+        std::vector<std::string> last_ret, now_ret;
+        for (auto &col : result_info_.header.colums) {
+            last_ret.push_back(col.alias);
+        }
+        for (auto& item : items) {
+            now_ret.push_back(std::get<0>(item));
+        }
+        std::sort(last_ret.begin(), last_ret.end());
+        std::sort(now_ret.begin(), now_ret.end());
+        if (!CheckReturnElements(last_ret, now_ret)) {
+            throw lgraph::CypherException(
+                "All sub queries in an UNION must have the same column names.");
+        }
     }
     result_info_.header.colums.clear();
     for (auto& item : items) {

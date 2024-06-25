@@ -980,43 +980,35 @@ std::any PatternGraphMaker::visit(geax::frontend::NamedProcedureCall* node) {
 std::any PatternGraphMaker::visit(geax::frontend::ForStatement* node) { NOT_SUPPORT(); }
 
 std::any PatternGraphMaker::visit(geax::frontend::PrimitiveResultStatement* node) {
-//    auto& items = node->items();
-//    auto& pattern_graph = pattern_graphs_[cur_pattern_graph_];
-//    for (auto item : items) {
-//        auto alias = std::get<0>(item);
-//        auto expr = std::get<1>(item);
-//        ACCEPT_AND_CHECK_WITH_ERROR_MSG(expr);
-//        SymbolNode::Type symbol_type = SymbolNode::Type::CONSTANT;
-//        if (auto ref = dynamic_cast<geax::frontend::Ref*>(expr)) {
-//            auto ref_symbol = pattern_graph.symbol_table.symbols.find(ref->name());
-//            if (ref_symbol != pattern_graph.symbol_table.symbols.end()) {
-//                symbol_type = ref_symbol->second.type;
-//            }
-//        }
-//        if (pattern_graph.symbol_table.symbols.find(alias) ==
-//            pattern_graph.symbol_table.symbols.end()) {
-//            pattern_graph.symbol_table.symbols.emplace(
-//                alias,
-//                SymbolNode(symbols_idx_[cur_pattern_graph_]++, symbol_type, SymbolNode::LOCAL));
-//        }
-//        if (!pattern_graph_in_union_[cur_pattern_graph_]) {
-//            if (cur_pattern_graph_ < pattern_graphs_.size() - 1 &&
-//                pattern_graphs_[cur_pattern_graph_ + 1].symbol_table.symbols.find(alias) ==
-//                    pattern_graphs_[cur_pattern_graph_ + 1].symbol_table.symbols.end()) {
-//                pattern_graphs_[cur_pattern_graph_ + 1].symbol_table.symbols.emplace(
-//                    alias, SymbolNode(symbols_idx_[cur_pattern_graph_ + 1]++, symbol_type,
-//                                      SymbolNode::ARGUMENT));
-//            }
-//        } else {
-//            if (cur_pattern_graph_ > 0 && pattern_graph_in_union_[cur_pattern_graph_ - 1]) {
-//                if (pattern_graphs_[cur_pattern_graph_ - 1].symbol_table.symbols.find(alias) ==
-//                    pattern_graphs_[cur_pattern_graph_ - 1].symbol_table.symbols.end()) {
-//                    throw lgraph::CypherException(
-//                        "All sub queries in an UNION must have the same column names.");
-//                }
-//            }
-//        }
-//    }
+    auto& items = node->items();
+    auto& pattern_graph = pattern_graphs_[cur_pattern_graph_];
+    for (auto item : items) {
+        auto alias = std::get<0>(item);
+        auto expr = std::get<1>(item);
+        ACCEPT_AND_CHECK_WITH_ERROR_MSG(expr);
+        SymbolNode::Type symbol_type = SymbolNode::Type::CONSTANT;
+        if (auto ref = dynamic_cast<geax::frontend::Ref*>(expr)) {
+            auto ref_symbol = pattern_graph.symbol_table.symbols.find(ref->name());
+            if (ref_symbol != pattern_graph.symbol_table.symbols.end()) {
+                symbol_type = ref_symbol->second.type;
+            }
+        }
+        if (pattern_graph.symbol_table.symbols.find(alias) ==
+            pattern_graph.symbol_table.symbols.end()) {
+            pattern_graph.symbol_table.symbols.emplace(
+                alias,
+                SymbolNode(symbols_idx_[cur_pattern_graph_]++, symbol_type, SymbolNode::LOCAL));
+        }
+        if (!pattern_graph_in_union_[cur_pattern_graph_]) {
+            if (cur_pattern_graph_ < pattern_graphs_.size() - 1 &&
+                pattern_graphs_[cur_pattern_graph_ + 1].symbol_table.symbols.find(alias) ==
+                    pattern_graphs_[cur_pattern_graph_ + 1].symbol_table.symbols.end()) {
+                pattern_graphs_[cur_pattern_graph_ + 1].symbol_table.symbols.emplace(
+                    alias, SymbolNode(symbols_idx_[cur_pattern_graph_ + 1]++, symbol_type,
+                                      SymbolNode::ARGUMENT));
+            }
+        }
+    }
     return geax::frontend::GEAXErrorCode::GEAX_SUCCEED;
 }
 

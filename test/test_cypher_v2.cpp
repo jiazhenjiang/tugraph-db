@@ -585,10 +585,3 @@ TEST_F(TestCypherV2, TestEdgeIdQuery) {
     std::string dir = test_suite_dir_ + "/edge_id_query/cypher";
     test_files(dir);
 }
-
-TEST_F(TestCypherV2, TestDemo) {
-    set_graph_type(GraphFactory::GRAPH_DATASET_TYPE::YAGO);
-    set_query_type(lgraph::ut::QUERY_TYPE::CYPHER);
-    std::string dir = test_suite_dir_ + "/demo";
-    test_file(dir, false);
-}
