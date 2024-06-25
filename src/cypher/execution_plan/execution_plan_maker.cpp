@@ -117,6 +117,22 @@ static OpBase* _Connect(OpBase* lhs, OpBase* rhs, PatternGraph* pattern_graph) {
     return rhs;
 }
 
+static bool CheckReturnElements(const std::vector<std::string> &last_ret, const std::vector<std::string> &now_ret) {
+    // some certain single query (e.g. MATCH(n) RETURN *) without no return items
+    // cannot be unioned.
+    if (last_ret.empty() || now_ret.empty()) {
+        return false;
+    }
+    // if two queries return different size of items, cannot be unioned
+    if (last_ret.size() != now_ret.size()) {
+        return false;
+    }
+    for (int j = 0; j < (int)last_ret.size(); j++) {
+        if (last_ret[j] != now_ret[j]) return false;
+    }
+    return true;
+}
+
 geax::frontend::GEAXErrorCode ExecutionPlanMaker::Build(geax::frontend::AstNode* astNode,
                                                         OpBase*& root) {
     cur_types_.clear();
@@ -939,6 +955,21 @@ std::any ExecutionPlanMaker::visit(geax::frontend::PrimitiveResultStatement* nod
     }
     std::vector<std::tuple<ArithExprNode, std::string>> arith_items;
     auto& pattern_graph = pattern_graphs_[cur_pattern_graph_];
+    if (!should_connect_[cur_pattern_graph_]) {
+        std::vector<std::string> last_ret, now_ret;
+        for (auto &col : result_info_.header.colums) {
+            last_ret.push_back(col.alias);
+        }
+        for (auto& item : items) {
+            now_ret.push_back(std::get<0>(item));
+        }
+        std::sort(last_ret.begin(), last_ret.end());
+        std::sort(now_ret.begin(), now_ret.end());
+        if (!CheckReturnElements(last_ret, now_ret)) {
+            throw lgraph::CypherException(
+                "All sub queries in an UNION must have the same column names.");
+        }
+    }
     result_info_.header.colums.clear();
     for (auto& item : items) {
         ArithExprNode ae(std::get<1>(item), pattern_graph.symbol_table);
@@ -1111,6 +1142,13 @@ std::any ExecutionPlanMaker::visit(geax::frontend::DeleteStatement* node) {
 
 std::any ExecutionPlanMaker::visit(geax::frontend::RemoveStatement* node) {
     auto& pattern_graph = pattern_graphs_[cur_pattern_graph_];
+    for (auto &item : node->items()) {
+        geax::frontend::RemoveSingleProperty *remove;
+        checkedCast(item, remove);
+        if (!_IsVariableDefined(remove->v())) {
+            THROW_CODE(InputError, "Variable `{}` not defined", remove->v());
+        }
+    }
     auto op = new OpGqlRemove(node->items(), &pattern_graph);
     _UpdateStreamRoot(op, pattern_graph_root_[cur_pattern_graph_]);
     return geax::frontend::GEAXErrorCode::GEAX_SUCCEED;

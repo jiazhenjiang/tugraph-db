@@ -458,6 +458,9 @@ std::any CypherBaseVisitorV2::visitOC_Delete(LcypherParser::OC_DeleteContext *ct
             VisitGuard guard(VisitType::kDeleteVariable, visit_types_);
             geax::frontend::Expr *expr = nullptr;
             checkedAnyCast(visit(e), expr);
+            if (expr->type() != geax::frontend::AstNodeType::kRef) {
+                THROW_CODE(InputError, "Type mismatch: expected Node, Path or Relationship");
+            }
             geax::frontend::VString *str;
             checkedCast(expr, str);
             std::string field = str->val();

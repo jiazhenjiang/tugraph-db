@@ -1007,14 +1007,6 @@ std::any PatternGraphMaker::visit(geax::frontend::PrimitiveResultStatement* node
                     alias, SymbolNode(symbols_idx_[cur_pattern_graph_ + 1]++, symbol_type,
                                       SymbolNode::ARGUMENT));
             }
-        } else {
-            if (cur_pattern_graph_ > 0 && pattern_graph_in_union_[cur_pattern_graph_ - 1]) {
-                if (pattern_graphs_[cur_pattern_graph_ - 1].symbol_table.symbols.find(alias) ==
-                    pattern_graphs_[cur_pattern_graph_ - 1].symbol_table.symbols.end()) {
-                    throw lgraph::CypherException(
-                        "All sub queries in an UNION must have the same column names.");
-                }
-            }
         }
     }
     return geax::frontend::GEAXErrorCode::GEAX_SUCCEED;
