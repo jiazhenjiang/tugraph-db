@@ -200,23 +200,23 @@ class TestCypherV2 : public TuGraphTest {
                 result = execution_plan_v2.ErrorMsg();
                 return false;
             } else {
-                if (visitor.CommandType() != parser::CmdType::QUERY) {
-                    ctx_->result_info_ = std::make_unique<cypher::ResultInfo>();
-                    ctx_->result_ = std::make_unique<lgraph::Result>();
-                    std::string header, data;
-                    if (visitor.CommandType() == parser::CmdType::EXPLAIN) {
-                        header = "@plan";
-                        data = execution_plan_v2.DumpPlan(0, false);
-                    } else {
-                        header = "@profile";
-                        data = execution_plan_v2.DumpGraph();
-                    }
-                    ctx_->result_->ResetHeader({{header, lgraph_api::LGraphType::STRING}});
-                    auto r = ctx_->result_->MutableRecord();
-                    r->Insert(header, lgraph::FieldData(data));
-                    result = ctx_->result_->Dump(false);
-                    return true;
-                }
+//                if (visitor.CommandType() != parser::CmdType::QUERY) {
+//                    ctx_->result_info_ = std::make_unique<cypher::ResultInfo>();
+//                    ctx_->result_ = std::make_unique<lgraph::Result>();
+//                    std::string header, data;
+//                    if (visitor.CommandType() == parser::CmdType::EXPLAIN) {
+//                        header = "@plan";
+//                        data = execution_plan_v2.DumpPlan(0, false);
+//                    } else {
+//                        header = "@profile";
+//                        data = execution_plan_v2.DumpGraph();
+//                    }
+//                    ctx_->result_->ResetHeader({{header, lgraph_api::LGraphType::STRING}});
+//                    auto r = ctx_->result_->MutableRecord();
+//                    r->Insert(header, lgraph::FieldData(data));
+//                    result = ctx_->result_->Dump(false);
+//                    return true;
+//                }
                 try {
                     execution_plan_v2.Execute(ctx_.get());
                 } catch (std::exception& e) {
@@ -584,4 +584,11 @@ TEST_F(TestCypherV2, TestEdgeIdQuery) {
     set_query_type(lgraph::ut::QUERY_TYPE::CYPHER);
     std::string dir = test_suite_dir_ + "/edge_id_query/cypher";
     test_files(dir);
+}
+
+TEST_F(TestCypherV2, TestDemo) {
+    set_graph_type(GraphFactory::GRAPH_DATASET_TYPE::YAGO);
+    set_query_type(lgraph::ut::QUERY_TYPE::CYPHER);
+    std::string dir = test_suite_dir_ + "/demo";
+    test_file(dir, false);
 }
