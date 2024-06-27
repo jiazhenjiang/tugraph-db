@@ -438,6 +438,7 @@ std::any CypherBaseVisitorV2::visitOC_SetItem(LcypherParser::OC_SetItemContext *
         update->setV(std::move(variable));
         if (ctx->oC_Expression()) {
             VisitGuard guard(VisitType::kSetVariable, visit_types_);
+            VisitGuard guardLabel(VisitType::kSetLabel, visit_types_);
             SWITCH_CONTEXT_VISIT(ctx->oC_Expression(), update);
         } else {
             NOT_SUPPORT_AND_THROW();
@@ -1425,9 +1426,13 @@ std::any CypherBaseVisitorV2::visitOC_PropertyOrLabelsExpression(
 
 std::any CypherBaseVisitorV2::visitOC_Atom(LcypherParser::OC_AtomContext *ctx) {
     if (ctx->oC_Variable()) {
-        if (VisitGuard::InClause(VisitType::kSetVariable, visit_types_) ||
-            VisitGuard::InClause(VisitType::kDeleteVariable, visit_types_)) {
+        if (VisitGuard::InClause(VisitType::kDeleteVariable, visit_types_) ||
+            (VisitGuard::InClause(VisitType::kSetVariable, visit_types_) &&
+             !VisitGuard::InClause(VisitType::kSetLabel, visit_types_))) {
             return visit(ctx->oC_Variable());
+        } else if (VisitGuard::InClause(VisitType::kSetVariable, visit_types_) &&
+                   VisitGuard::InClause(VisitType::kSetLabel, visit_types_)) {
+            THROW_CODE(CypherException, "Not support vertex or edge as right value in set clause.");
         } else {
             geax::frontend::Expr *name_expr = nullptr;
             checkedAnyCast(visit(ctx->oC_Variable()), name_expr);
