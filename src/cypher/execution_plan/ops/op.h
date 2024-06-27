@@ -72,7 +72,8 @@ enum OpType {
     GQL_DELETE_,
     GQL_UPDATE,
     GQL_INQUERY_CALL,
-    GQL_MERGE
+    GQL_MERGE,
+    GQL_REMOVE
 };
 
 struct OpStats {
