@@ -924,6 +924,13 @@ std::any PatternGraphMaker::visit(geax::frontend::CompositeQueryStatement* node)
 std::any PatternGraphMaker::visit(geax::frontend::AmbientLinearQueryStatement* node) {
     execution_plan_->SetReadOnly(true);
     auto& query_stmts = node->queryStatements();
+    int match_count = 0;
+    for (auto &stat : query_stmts) {
+        if (stat->type() == geax::frontend::AstNodeType::kMatchStatement) {
+            match_count++;
+        }
+    }
+    if (match_count > 1) CYPHER_TODO();
     for (auto query_stmt : query_stmts) {
         ACCEPT_AND_CHECK_WITH_ERROR_MSG(query_stmt);
     }
