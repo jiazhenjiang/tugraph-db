@@ -2703,7 +2703,7 @@ void AlgoFuncV2::ShortestPath(RTContext *ctx, const Record *record, const cypher
         }
         auto max = map.find("maxHops");
         if (max != map.end()) {
-            if (max->second.IsInteger()) CYPHER_TODO();
+            if (!max->second.IsInteger()) CYPHER_TODO();
             max_hops = max->second.scalar.integer();
         }
         // direction
