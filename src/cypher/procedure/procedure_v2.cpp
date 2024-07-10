@@ -2980,4 +2980,47 @@ void AlgoFuncV2::Jaccard(RTContext *ctx, const cypher::Record *record,
         records->emplace_back(r.Snapshot());
     }
 }
+
+void SpatialFuncV2::Distance(RTContext *ctx, const Record *record,
+                           const cypher::VEC_EXPR_V2 &args,
+                           const cypher::VEC_STR_V2 &yield_items,
+                           struct std::vector<Record> *records) {
+    CYPHER_ARG_CHECK(args.size() == 2, "wrong arguments number");
+    CYPHER_ARG_CHECK(args[0].IsSpatial(),
+                     FMA_FMT("{} has to be spatial data",
+                             args[0].ToString()));
+    CYPHER_ARG_CHECK(args[1].IsSpatial(),
+                     FMA_FMT("{} has to be spatial data",
+                             args[1].ToString()));
+
+    ::lgraph_api::SRID srid1 = args[0].constant.scalar.GetSRID();
+    ::lgraph_api::SRID srid2 = args[1].constant.scalar.GetSRID();
+    CYPHER_THROW_ASSERT(srid1 == srid2);
+    double d = 0;
+    switch (srid1) {
+    case ::lgraph_api::SRID::WGS84:
+        {
+            auto Spatial1 = args[0].constant.scalar.AsWgsSpatial();
+            auto Spatial2 = args[1].constant.scalar.AsWgsSpatial();
+            d = Spatial1.Distance(Spatial2);
+            break;
+        }
+
+    case ::lgraph_api::SRID::CARTESIAN:
+        {
+            auto Spatial1 = args[0].constant.scalar.AsCartesianSpatial();
+            auto Spatial2 = args[1].constant.scalar.AsCartesianSpatial();
+            d = Spatial1.Distance(Spatial2);
+            break;
+        }
+
+    default:
+        throw std::runtime_error("unsupported srid type!");
+    }
+
+    Record r;
+    r.AddConstant(::lgraph::FieldData(d));
+    records->emplace_back(r.Snapshot());
+}
+
 }  // namespace cypher
