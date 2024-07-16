@@ -617,7 +617,7 @@ class TestInFilter : public Filter {
             if (timestamp != producer_op_->stats.profileRecordCount) {
                 right_set_.clear();
                 for (auto &r : *right.constant.array) {
-                    right_set_.emplace(r);
+                    right_set_.emplace(r.scalar);
                 }
                 timestamp++;
 #ifndef NDEBUG
@@ -636,7 +636,7 @@ class TestInFilter : public Filter {
             LOG_WARN() << "[" << __FILE__ << "] "
                        << "do not use unordered_set";
             for (auto &r : *right.constant.array) {
-                if (left.constant.scalar == r) return true;
+                if (left.constant.scalar == r.scalar) return true;
             }
         }
 

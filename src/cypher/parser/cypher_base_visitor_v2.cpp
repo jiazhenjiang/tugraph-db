@@ -438,6 +438,7 @@ std::any CypherBaseVisitorV2::visitOC_SetItem(LcypherParser::OC_SetItemContext *
         update->setV(std::move(variable));
         if (ctx->oC_Expression()) {
             VisitGuard guard(VisitType::kSetVariable, visit_types_);
+            VisitGuard guardLabel(VisitType::kSetLabel, visit_types_);
             SWITCH_CONTEXT_VISIT(ctx->oC_Expression(), update);
         } else {
             NOT_SUPPORT_AND_THROW();
@@ -458,12 +459,12 @@ std::any CypherBaseVisitorV2::visitOC_Delete(LcypherParser::OC_DeleteContext *ct
             VisitGuard guard(VisitType::kDeleteVariable, visit_types_);
             geax::frontend::Expr *expr = nullptr;
             checkedAnyCast(visit(e), expr);
-            if (expr->type() != geax::frontend::AstNodeType::kVString) {
+            if (expr->type() != geax::frontend::AstNodeType::kRef) {
                 THROW_CODE(InputError, "Type mismatch: expected Node, Path or Relationship");
             }
-            geax::frontend::VString *str;
+            geax::frontend::Ref *str;
             checkedCast(expr, str);
-            std::string field = str->val();
+            std::string field = str->name();
             del->appendItem(std::move(field));
         }
     }
@@ -1425,9 +1426,8 @@ std::any CypherBaseVisitorV2::visitOC_PropertyOrLabelsExpression(
 
 std::any CypherBaseVisitorV2::visitOC_Atom(LcypherParser::OC_AtomContext *ctx) {
     if (ctx->oC_Variable()) {
-        if (VisitGuard::InClause(VisitType::kSetVariable, visit_types_) ||
-            VisitGuard::InClause(VisitType::kDeleteVariable, visit_types_)) {
-            return visit(ctx->oC_Variable());
+        if (VisitGuard::InClause(VisitType::kSetLabel, visit_types_)) {
+            THROW_CODE(CypherException, "Not support vertex or edge as right value in set clause.");
         } else {
             geax::frontend::Expr *name_expr = nullptr;
             checkedAnyCast(visit(ctx->oC_Variable()), name_expr);
@@ -1835,7 +1835,8 @@ std::any CypherBaseVisitorV2::visitOC_MapLiteral(LcypherParser::OC_MapLiteralCon
             ps->appendProperty(std::move(name), expr);
         }
     } else if (VisitGuard::InClause(VisitType::kStandaloneCall, visit_types_) ||
-               VisitGuard::InClause(VisitType::kInQueryCall, visit_types_)) {
+               VisitGuard::InClause(VisitType::kInQueryCall, visit_types_) ||
+               VisitGuard::InClause(VisitType::kReadingClause, visit_types_)) {
         auto map = ALLOC_GEAOBJECT(geax::frontend::MkMap);
         if (ctx->oC_Expression().size() != ctx->oC_PropertyKeyName().size())
             NOT_SUPPORT_AND_THROW();
@@ -1868,9 +1869,9 @@ std::any CypherBaseVisitorV2::visitOC_PropertyExpression(
         checkedCast(node_, node);
         geax::frontend::Expr *name_expr = nullptr;
         checkedAnyCast(visit(ctx->oC_Atom()), name_expr);
-        geax::frontend::VString *vstr = nullptr;
-        checkedCast(name_expr, vstr);
-        std::string var = vstr->val();
+        geax::frontend::Ref *vref = nullptr;
+        checkedCast(name_expr, vref);
+        std::string var = vref->name();
         node->setV(std::move(var));
 
         auto ps = ALLOC_GEAOBJECT(geax::frontend::PropStruct);
