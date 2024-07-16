@@ -23,7 +23,7 @@
 namespace cypher {
 
 class Unwind : public OpBase {
-    std::vector<lgraph::FieldData> list_;  // List which the unwind operation is performed on.
+    std::vector<cypher::FieldData> list_;  // List which the unwind operation is performed on.
     ArithExprNode exp_;                    // Arithmetic expression (evaluated as an array).
     std::string resolved_name_;
     int rec_idx_ = 0;
@@ -64,7 +64,7 @@ class Unwind : public OpBase {
             }
             auto list = exp_.Evaluate(ctx, *record);
             if (list.IsArray()) {
-                list_ = list.constant.AsConstantArray();
+                list_ = *list.constant.array;
                 list_idx_ = 0;
             } else {
                 /* Attempting to use UNWIND on an expression that does not return a list --
@@ -100,7 +100,7 @@ class Unwind : public OpBase {
         if (child->Consume(ctx) == OP_OK) {
             auto list = exp_.Evaluate(ctx, *child->record);
             if (list.IsArray()) {
-                list_ = list.constant.AsConstantArray();
+                list_ = *list.constant.array;
                 list_idx_ = 0;
             } else {
                 if (!list.IsNull()) throw lgraph::CypherException("List expected in UNWIND");

@@ -1835,7 +1835,8 @@ std::any CypherBaseVisitorV2::visitOC_MapLiteral(LcypherParser::OC_MapLiteralCon
             ps->appendProperty(std::move(name), expr);
         }
     } else if (VisitGuard::InClause(VisitType::kStandaloneCall, visit_types_) ||
-               VisitGuard::InClause(VisitType::kInQueryCall, visit_types_)) {
+               VisitGuard::InClause(VisitType::kInQueryCall, visit_types_) ||
+               VisitGuard::InClause(VisitType::kReadingClause, visit_types_)) {
         auto map = ALLOC_GEAOBJECT(geax::frontend::MkMap);
         if (ctx->oC_Expression().size() != ctx->oC_PropertyKeyName().size())
             NOT_SUPPORT_AND_THROW();

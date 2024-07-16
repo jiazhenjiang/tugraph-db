@@ -379,9 +379,8 @@ struct FieldData {
         case MAP: {
             std::string str("{");
             for (auto& pair : *map) {
-                str.append("{");
-                str.append(pair.first).append(",").append(pair.second.ToString(null_value));
-                str.append("},");
+                str.append(pair.first).append(":").append(pair.second.ToString(null_value));
+                str.append(",");
             }
             if (str.size() > 1) str.pop_back();
             str.append("}");

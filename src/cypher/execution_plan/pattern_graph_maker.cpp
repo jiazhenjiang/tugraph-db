@@ -315,6 +315,11 @@ std::any PatternGraphMaker::visit(geax::frontend::PropStruct* node) {
             p.type = Property::PARAMETER;
             p.value = lgraph::FieldData(((geax::frontend::Param*)value)->name());
             p.value_alias = ((geax::frontend::Param*)value)->name();
+        } else if (value->type() == geax::frontend::AstNodeType::kGetField) {
+            p.type = Property::VARIABLE;
+            p.value_alias = ((geax::frontend::Ref*)(((geax::frontend::GetField*)value)->expr()))->name();
+            p.value = lgraph::FieldData(p.value_alias);
+            p.map_field_name = ((geax::frontend::GetField*)value)->fieldName();
         } else {
             NOT_SUPPORT();
         }
